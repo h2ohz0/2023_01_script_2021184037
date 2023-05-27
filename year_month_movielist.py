@@ -4,11 +4,12 @@ from tkinter import *
 from PIL import Image, ImageTk
 from io import BytesIO
 
+kofic_api_key = "f4ebe0c546de8755777b5f9ad9244615"
 
 movie_details = None
 label_poster = None
 
-def get_movie_details(movie_id):
+def get_movie_details(movie_id, kofic_api_key):
     api_key = "191bceef021f24c785530fc8364dcc11"
     movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
     credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits"
@@ -16,20 +17,18 @@ def get_movie_details(movie_id):
     params = {
         "api_key": api_key,
         "region": "KR",
-        "language": "ko-KR"  # Set the language parameter to "ko-KR"
+        "language": "ko-KR"
     }
 
-    # get movie details
+    # Get movie details from TMDB API
     response = requests.get(movie_url, params=params)
     data = response.json()
     title = data.get("title", "")
     poster_path = data.get("poster_path", "")
     release_date = data.get("release_date", "")
-
-    # get genres
     genres = [genre.get('name') for genre in data.get('genres', [])]
 
-    # get credits details
+    # Get credits details from TMDB API
     response = requests.get(credits_url, params=params)
     data = response.json()
 
@@ -41,10 +40,50 @@ def get_movie_details(movie_id):
 
     cast = [member.get('name') for member in data.get('cast', [])[:5]]
 
-    return title, poster_path, director, cast, release_date, genres  # Updated to return genres
+    # Get KOFIC movie ID
+    kofic_url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key={kofic_api_key}&movieNm={title}"
+    response = requests.get(kofic_url)
+    kofic_data = response.json()
+    kofic_movie_list = kofic_data.get("movieListResult", {}).get("movieList", [])
+
+    kofic_movie_id = ""
+    if kofic_movie_list:
+        kofic_movie_id = kofic_movie_list[0].get("movieCd", "")
+
+    # Get watch grade from KOFIC API
+    watch_grade = "N/A"
+    if kofic_movie_id:
+        movie_id_str = str(kofic_movie_id)
+        watch_grade = get_watch_grade(movie_id_str, kofic_api_key)
+
+    return title, poster_path, director, cast, release_date, genres, watch_grade
 
 
-def create_scrollable_list(data, year, month):
+def get_watch_grade(movie_id_str, kofic_api_key):
+    kofic_url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json?key={kofic_api_key}&movieCd={movie_id_str}"
+    response = requests.get(kofic_url)
+    kofic_data = response.json()
+    audits = kofic_data.get("movieInfoResult", {}).get("movieInfo", {}).get("audits", [])
+    watch_grade = audits[0].get("watchGradeNm", "N/A") if audits else "N/A"
+    return watch_grade
+
+
+def get_watch_grade(movie_id, kofic_api_key):
+    url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json"
+    params = {
+        "key": kofic_api_key,
+        "movieCd": movie_id
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    movie_info = data.get("movieInfoResult", {}).get("movieInfo", {})
+    watch_grade = movie_info.get("audits", [{}])[0].get("watchGradeNm", "N/A")
+
+    return watch_grade
+
+def create_scrollable_list(data, year, month, kofic_api_key):
     root = Toplevel()
     root.title("Movie List")
     root.geometry("1000x700")  # Change the size of the window here
@@ -70,24 +109,23 @@ def create_scrollable_list(data, year, month):
         index = listbox.curselection()
         if index:
             movie_id = data[index[0]]["id"]
-            title, poster_path, director, cast, release_date, genres = get_movie_details(
-                movie_id)  # Updated to get genres
+            movie_info = get_movie_details(movie_id, kofic_api_key)
 
             movie_details.config(state=NORMAL)
             movie_details.delete(1.0, END)
 
             movie_details.insert(END,
-                                 f'Title: {title}\nRelease Date: {release_date}\nDirector: {director}\nCast: {", ".join(cast)}\nGenres: {", ".join(genres)}')  # Updated to display genres
+                                 f'Title: {movie_info[0]}\nRelease Date: {movie_info[4]}\nDirector: {movie_info[2]}\nCast: {", ".join(movie_info[3])}\nGenres: {", ".join(movie_info[5])}\nWatch Grade: {movie_info[6]}')
 
             # Update movie poster
-            if poster_path:
-                response = requests.get(f"https://image.tmdb.org/t/p/w200{poster_path}")
+            if movie_info[1]:
+                response = requests.get(f"https://image.tmdb.org/t/p/w200{movie_info[1]}")
                 image = Image.open(BytesIO(response.content))
                 photo = ImageTk.PhotoImage(image)
                 label_poster.image = photo  # Keep a reference to the image
                 label_poster.config(image=photo)
             else:
-                label_poster.config(image='')  # Clear the label if no image
+                label_poster.config(image='')
 
     listbox.bind("<<ListboxSelect>>", on_movie_select)
 
@@ -95,7 +133,6 @@ def create_scrollable_list(data, year, month):
         listbox.insert(END, item["title"])
 
     root.mainloop()
-
 
 def get_monthly_movie_list(year, month):
     api_key = "191bceef021f24c785530fc8364dcc11"
@@ -119,14 +156,16 @@ def get_monthly_movie_list(year, month):
 
     return movie_list
 
+
 def create_gui():
     def on_button_click():
         try:
             year = int(entry_year.get())
             month = int(entry_month.get())
+            kofic_api_key = "영화진흥위원회 발급한 API 키"
             if 1 <= month <= 12:
                 movie_list = get_monthly_movie_list(year, month)
-                create_scrollable_list(movie_list, year, month)
+                create_scrollable_list(movie_list, year, month, kofic_api_key)
             else:
                 messagebox.showerror("Error", "Month must be between 1 and 12.")
         except ValueError:
