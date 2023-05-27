@@ -1,118 +1,118 @@
 import requests
+import tkinter as tk
+from tkinter import messagebox
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import pandas as pd
 
-# API 키
-api_key = 'f4ebe0c546de8755777b5f9ad9244615'
-year = '2023'
+def get_korean_movie_data(start_year, end_year, start_month, end_month):
+    api_key = "191bceef021f24c785530fc8364dcc11"
+    base_url = "https://api.themoviedb.org/3/discover/movie"
 
-# 연도별 영화 출시 통계
-def get_yearly_movie_statistics():
-    url = f'https://api.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key={api_key}&curPage=1&itemPerPage=10&openStartDt={year}-01-01&openEndDt={year}-12-31'
-    response = requests.get(url)
-    data = response.json()
+    params = {
+        "api_key": api_key,
+        "language": "ko-KR",
+        "region": "KR",
+        "with_original_language": "ko",
+        "page": 1
+    }
 
-    print(data)  # API 응답 확인용
+    movie_count = {}
 
-    total_count = data['movieListResult']['totCnt']
-    return total_count
+    for year in range(int(start_year), int(end_year) + 1):
+        params["primary_release_year"] = year
 
+        for month in range(int(start_month), int(end_month) + 1):
+            params["primary_release_date.gte"] = f"{year}-{str(month).zfill(2)}-01"
+            params["primary_release_date.lte"] = f"{year}-{str(month).zfill(2)}-31"
 
-# 월별 영화 출시 통계
-def get_monthly_movie_statistics():
-    monthly_counts = {}
+            response = requests.get(base_url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                total_results = data.get("total_results", 0)
+            else:
+                print(f"API request failed with status code {response.status_code}.")
+                total_results = 0
 
-    for month in range(1, 13):
-        url = f'https://api.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key={api_key}&curPage=1&itemPerPage=10&openStartDt={year}-{month:02d}-01&openEndDt={year}-{month:02d}-31'
-        response = requests.get(url)
-        data = response.json()
+            if str(year) not in movie_count:
+                movie_count[str(year)] = {}
+            movie_count[str(year)][str(month).zfill(2)] = total_results
 
-        print(data)  # API 응답 확인용
+    return movie_count
 
-        total_count = data['movieListResult']['totCnt']
-        monthly_counts[month] = total_count
-
-    return monthly_counts
-
-# 특정 감독의 인기 지표 분석
-def get_director_popularity(director_name):
-    url = f'https://api.kobis.or.kr/kobisopenapi/webservice/rest/people/searchPeopleList.json?key={api_key}&peopleNm={director_name}'
-    response = requests.get(url)
-    data = response.json()
-
-    print(data)  # API 응답 확인용
-
-    if data['peopleListResult']['totCnt'] == 0:
-        return 'Director not found.'
-
-    director_code = data['peopleListResult']['peopleList'][0]['peopleCd']
-
-    url = f'https://api.kobis.or.kr/kobisopenapi/webservice/rest/people/popularMovies.json?key={api_key}&peopleCd={director_code}'
-    response = requests.get(url)
-    data = response.json()
-
-    popular_movies = data['peopleListResult']['peopleList'][0]['filmoNames']
-    return popular_movies
-
-# 연도별 영화 출시 통계 시각화
-def plot_yearly_movie_statistics():
-    years = range(2010, 2023)
-    movie_counts = []
+def plot_data(movie_count):
+    years = sorted(list(movie_count.keys()))
+    months = list(range(1, 13))
+    counts = []
 
     for year in years:
-        total_count = get_yearly_movie_statistics(year)
-        movie_counts.append(total_count)
+        year_counts = []
+        for month in months:
+            count = movie_count.get(year, {}).get(str(month), 0)
+            year_counts.append(int(count) if int(count) >= 0 else 0)
+        counts.append(year_counts)
 
-    plt.plot(years, movie_counts)
-    plt.xlabel('Year')
-    plt.ylabel('Number of Movies')
-    plt.title('Yearly Movie Release Statistics')
-    plt.show()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(counts, cmap="YlGnBu")
 
-# 월별 영화 출시 통계 시각화
-def plot_monthly_movie_statistics():
-    monthly_counts = get_monthly_movie_statistics()
-    months = list(monthly_counts.keys())
-    counts = list(monthly_counts.values())
+    ax.set_xticks(range(12))
+    ax.set_yticks(range(len(years)))
+    ax.set_xticklabels(months)
+    ax.set_yticklabels(years)
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Year")
+    ax.set_title("Korean Movies - Yearly & Monthly Release Count")
 
-    plt.bar(months, counts)
-    plt.xlabel('Month')
-    plt.ylabel('Number of Movies')
-    plt.title('Monthly Movie Release Statistics')
-    plt.show()
+    cbar = ax.figure.colorbar(im, ax=ax)
+    cbar.ax.set_ylabel("Number of Movies Released", rotation=-90, va="bottom")
 
-# 특정 감독의 인기 지표 분석 및 시각화
-def analyze_director_popularity(director_name):
-    movies = get_director_popularity(director_name)
+    return fig
 
-    if movies == 'Director not found.':
-        print(movies)
-    else:
-        movie_list = movies.split(',')
+def create_gui():
+    global entry_start_year, entry_end_year, entry_start_month, entry_end_month
 
-        # 영화별 인기 지표
-        movie_scores = []
-        for movie in movie_list:
-            url = f'https://api.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json?key={api_key}&movieNm={movie}'
-            response = requests.get(url)
-            data = response.json()
+    def on_button_click():
+        start_year = entry_start_year.get()
+        start_month = entry_start_month.get()
+        end_year = entry_end_year.get()
+        end_month = entry_end_month.get()
 
-            movie_score = data['movieInfoResult']['movieInfo']['audiCnt']
-            movie_scores.append(int(movie_score))
+        try:
+            movie_count = get_korean_movie_data(start_year, end_year, start_month, end_month)
+            figure = plot_data(movie_count)
 
-        # 영화 인기 지표 시각화
-        plt.bar(movie_list, movie_scores)
-        plt.xlabel('Movie')
-        plt.ylabel('Popularity Score')
-        plt.title(f'Popularity Score of Movies by {director_name}')
-        plt.xticks(rotation=90)
-        plt.show()
+            plt.figure(figure.number)
+            plt.tight_layout()
+            plt.show()
+        except:
+            messagebox.showerror("Error", "An error occurred while fetching data.")
 
-# 연도별 영화 출시 통계 시각화
-plot_yearly_movie_statistics()
+    root = tk.Tk()
+    root.title("Korean Movies - Yearly & Monthly Release Count")
 
-# 월별 영화 출시 통계 시각화
-plot_monthly_movie_statistics()
+    label_start_year = tk.Label(root, text="Start Year")
+    label_start_year.grid(row=0, column=0)
+    entry_start_year = tk.Entry(root)
+    entry_start_year.grid(row=0, column=1)
 
-# 특정 감독의 인기 지표 분석 및 시각화
-director_name = '이명세'  # 원하는 감독 이름으로 변경
-analyze_director_popularity(director_name)
+    label_start_month = tk.Label(root, text="Start Month")
+    label_start_month.grid(row=1, column=0)
+    entry_start_month = tk.Entry(root)
+    entry_start_month.grid(row=1, column=1)
+
+    label_end_year = tk.Label(root, text="End Year")
+    label_end_year.grid(row=2, column=0)
+    entry_end_year = tk.Entry(root)
+    entry_end_year.grid(row=2, column=1)
+
+    label_end_month = tk.Label(root, text="End Month")
+    label_end_month.grid(row=3, column=0)
+    entry_end_month = tk.Entry(root)
+    entry_end_month.grid(row=3, column=1)
+
+    button_get_data = tk.Button(root, text="Get Data", command=on_button_click)
+    button_get_data.grid(row=4, column=0, columnspan=2)
+
+    root.mainloop()
+
+create_gui()
