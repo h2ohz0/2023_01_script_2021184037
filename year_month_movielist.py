@@ -4,15 +4,15 @@ from tkinter import *
 from PIL import Image, ImageTk
 from io import BytesIO
 
-kofic_api_key = "f4ebe0c546de8755777b5f9ad9244615"
 
 movie_details = None
 label_poster = None
 
-def get_movie_details(movie_id, kofic_api_key):
+def get_movie_details(movie_id):
     api_key = "191bceef021f24c785530fc8364dcc11"
     movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
     credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits"
+    release_dates_url = f"https://api.themoviedb.org/3/movie/{movie_id}/release_dates"
 
     params = {
         "api_key": api_key,
@@ -40,48 +40,22 @@ def get_movie_details(movie_id, kofic_api_key):
 
     cast = [member.get('name') for member in data.get('cast', [])[:5]]
 
-    # Get KOFIC movie ID
-    kofic_url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key={kofic_api_key}&movieNm={title}"
-    response = requests.get(kofic_url)
-    kofic_data = response.json()
-    kofic_movie_list = kofic_data.get("movieListResult", {}).get("movieList", [])
-
-    kofic_movie_id = ""
-    if kofic_movie_list:
-        kofic_movie_id = kofic_movie_list[0].get("movieCd", "")
-
-    # Get watch grade from KOFIC API
-    watch_grade = "N/A"
-    if kofic_movie_id:
-        movie_id_str = str(kofic_movie_id)
-        watch_grade = get_watch_grade(movie_id_str, kofic_api_key)
+    # Get watch grade from TMDB API
+    response = requests.get(release_dates_url, params=params)
+    data = response.json()
+    releases = data.get('results', [])
+    watch_grade = 'N/A'
+    for release in releases:
+        if release.get('iso_3166_1') == 'KR':
+            certifications = release.get('release_dates', [])
+            for certification in certifications:
+                if certification.get('type') == 3:  # 3 is for theatrical release
+                    watch_grade = certification.get('certification')
+                    break
+            break
 
     return title, poster_path, director, cast, release_date, genres, watch_grade
 
-
-def get_watch_grade(movie_id_str, kofic_api_key):
-    kofic_url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json?key={kofic_api_key}&movieCd={movie_id_str}"
-    response = requests.get(kofic_url)
-    kofic_data = response.json()
-    audits = kofic_data.get("movieInfoResult", {}).get("movieInfo", {}).get("audits", [])
-    watch_grade = audits[0].get("watchGradeNm", "N/A") if audits else "N/A"
-    return watch_grade
-
-
-def get_watch_grade(movie_id, kofic_api_key):
-    url = f"http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json"
-    params = {
-        "key": kofic_api_key,
-        "movieCd": movie_id
-    }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-
-    movie_info = data.get("movieInfoResult", {}).get("movieInfo", {})
-    watch_grade = movie_info.get("audits", [{}])[0].get("watchGradeNm", "N/A")
-
-    return watch_grade
 
 def create_scrollable_list(data, year, month, kofic_api_key):
     root = Toplevel()
@@ -109,7 +83,7 @@ def create_scrollable_list(data, year, month, kofic_api_key):
         index = listbox.curselection()
         if index:
             movie_id = data[index[0]]["id"]
-            movie_info = get_movie_details(movie_id, kofic_api_key)
+            movie_info = get_movie_details(movie_id)
 
             movie_details.config(state=NORMAL)
             movie_details.delete(1.0, END)
@@ -162,7 +136,7 @@ def create_gui():
         try:
             year = int(entry_year.get())
             month = int(entry_month.get())
-            kofic_api_key = "영화진흥위원회 발급한 API 키"
+            kofic_api_key = "f4ebe0c546de8755777b5f9ad9244615"
             if 1 <= month <= 12:
                 movie_list = get_monthly_movie_list(year, month)
                 create_scrollable_list(movie_list, year, month, kofic_api_key)
