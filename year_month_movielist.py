@@ -57,12 +57,14 @@ def get_movie_details(movie_id):
     return title, poster_path, director, cast, release_date, genres, watch_grade
 
 
-def create_scrollable_list(data, year, month, kofic_api_key):
+def create_scrollable_list(data, year, month):
     root = Toplevel()
     root.title("Movie List")
     root.geometry("1000x700")  # Change the size of the window here
 
-    label_info = Label(root, text=f"Year: {year}   Month: {month}")
+    movie_count = len(data)
+
+    label_info = Label(root, text=f"Year: {year}   Month: {month}   Movie Count: {movie_count}")
     label_info.pack(pady=10)
 
     scrollbar = Scrollbar(root)
@@ -136,10 +138,9 @@ def create_gui():
         try:
             year = int(entry_year.get())
             month = int(entry_month.get())
-            kofic_api_key = "f4ebe0c546de8755777b5f9ad9244615"
             if 1 <= month <= 12:
                 movie_list = get_monthly_movie_list(year, month)
-                create_scrollable_list(movie_list, year, month, kofic_api_key)
+                create_scrollable_list(movie_list, year, month)  # remove kofic_api_key
             else:
                 messagebox.showerror("Error", "Month must be between 1 and 12.")
         except ValueError:
