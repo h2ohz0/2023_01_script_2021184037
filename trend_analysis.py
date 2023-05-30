@@ -4,6 +4,7 @@ from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
+from datetime import timedelta, date
 
 def get_korean_movie_data(start_year, end_year, start_month, end_month):
     api_key = "191bceef021f24c785530fc8364dcc11"
@@ -19,26 +20,30 @@ def get_korean_movie_data(start_year, end_year, start_month, end_month):
 
     movie_count = {}
 
-    for year in range(int(start_year), int(end_year) + 1):
-        params["primary_release_year"] = year
+    start_date = date(int(start_year), int(start_month), 1)
+    end_date = date(int(end_year), int(end_month), 1)
 
-        for month in range(int(start_month), int(end_month) + 1):
-            params["primary_release_date.gte"] = f"{year}-{str(month).zfill(2)}-01"
-            params["primary_release_date.lte"] = f"{year}-{str(month).zfill(2)}-31"
+    while start_date <= end_date:
+        params["primary_release_date.gte"] = f"{start_date.year}-{str(start_date.month).zfill(2)}-01"
+        params["primary_release_date.lte"] = f"{start_date.year}-{str(start_date.month).zfill(2)}-31"
 
-            response = requests.get(base_url, params=params)
-            if response.status_code == 200:
-                data = response.json()
-                total_results = data.get("total_results", 0)
-            else:
-                print(f"API request failed with status code {response.status_code}.")
-                total_results = 0
+        response = requests.get(base_url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            total_results = data.get("total_results", 0)
+        else:
+            print(f"API request failed with status code {response.status_code}.")
+            total_results = 0
 
-            if str(year) not in movie_count:
-                movie_count[str(year)] = {}
-            movie_count[str(year)][str(month).zfill(2)] = total_results
+        if str(start_date.year) not in movie_count:
+            movie_count[str(start_date.year)] = {}
+        movie_count[str(start_date.year)][str(start_date.month).zfill(2)] = total_results
+
+        start_date += timedelta(days=32) # ensure moving to the next month
+        start_date = date(start_date.year, start_date.month, 1)  # reset day to 1
 
     return movie_count
+
 
 def plot_data(movie_count):
     years = sorted(list(movie_count.keys()))
