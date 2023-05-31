@@ -134,6 +134,19 @@ def save_plot(figure):
                                                                 ("All files", "*.*")))
     if file_name:
         figure.savefig(file_name)
+
+def save_button_click_plot():
+    if 'current_figure' in globals():
+        save_plot(current_figure)
+    else:
+        messagebox.showinfo("Info", "No plot to save. Please get data first.")
+
+def save_button_click_data():
+    if 'current_data' in globals():
+        save_data_to_excel(current_data)
+    else:
+        messagebox.showinfo("Info", "No data to save. Please get data first.")
+
 def create_gui():
     global entry_start_year, entry_end_year, entry_start_month, entry_end_month, var_plot_type
 
@@ -172,12 +185,6 @@ def create_gui():
             print(e)
             messagebox.showerror("Error", "An error occurred while fetching data.")
 
-    def save_button_click():
-        if 'current_data' in globals():
-            save_data_to_excel(current_data)
-        else:
-            messagebox.showinfo("Info", "No data to save. Please get data first.")
-
     root = tk.Tk()
     root.title("Korean Movies - Yearly & Monthly Release Count")
 
@@ -210,12 +217,13 @@ def create_gui():
     dropdown = tk.OptionMenu(root, var_plot_type, *plot_types)
     dropdown.grid(row=4, column=1)
 
-    button_save_plot = tk.Button(root, text="Save Plot", command=save_button_click)
+    button_save_plot = tk.Button(root, text="Save Plot", command=save_button_click_plot)
     button_save_plot.grid(row=4, column=2)
 
-    button_save_data = tk.Button(root, text="Save Data", command=save_button_click)
+    button_save_data = tk.Button(root, text="Save Data", command=save_button_click_data)
     button_save_data.grid(row=4, column=3)
 
     root.mainloop()
+
 
 create_gui()
