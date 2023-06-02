@@ -50,7 +50,8 @@ def send_box_office_info(chat_id, targetDt, boxoffice_data):
         rank = movie.get('rank')
         title = movie.get('movieNm')
         audience = movie.get('audiCnt')
-        message += f"{rank}위 - {title}, 관객수: {audience}명\n"
+        total_audience = movie.get('audiAcc')  # 누적 관객 수
+        message += f"{rank}위 - {title}\n 일일 관객수: {audience}명, 누적 관객수: {total_audience}명\n"
     bot.sendMessage(chat_id, message)
 
 def handle(msg):
@@ -67,12 +68,18 @@ def handle(msg):
     elif text == '오늘 개봉 영화':
         movies = get_today_release_movies()
         send_movies_info(chat_id, movies)
-    elif re.match(r'^국내 박스오피스 순위 \d{8}$', text):
-        targetDt = text.split(' ')[-1]
-        targetDt, boxoffice_data = get_box_office_kr(targetDt)
-        send_box_office_info(chat_id, targetDt, boxoffice_data)
+    elif text.startswith('국내 박스오피스 순위'):
+        target_date = text.replace('국내 박스오피스 순위', '').strip()
+        if target_date >= date.today().strftime("%Y%m%d"):
+            bot.sendMessage(chat_id, '미래의 박스오피스 순위를 미리볼 수 없습니다:(')
+        else:
+            targetDt, boxoffice_data = get_box_office_kr(target_date)
+            if boxoffice_data is None:
+                bot.sendMessage(chat_id, f'{target_date}의 박스오피스 정보를 가져올 수 없습니다.')
+            else:
+                send_box_office_info(chat_id, targetDt, boxoffice_data)
     else:
-        bot.sendMessage(chat_id, "모르는 명령어입니다. '상영 영화 정보', '오늘 개봉 영화', '국내 박스오피스 순위 YYYYMMDD' 중 하나의 명령을 입력하세요.")
+        bot.sendMessage(chat_id, "모르는 명령어입니다. '상영 영화 정보', '오늘 개봉 영화', 또는 '국내 박스오피스 순위 [YYYYMMDD]' 중 하나의 명령을 입력하세요.")
 bot.message_loop(handle)
 
 print('Listening...')
