@@ -11,7 +11,7 @@ TMDB_API_KEY = '191bceef021f24c785530fc8364dcc11'
 bot = telepot.Bot(TOKEN)
 
 def get_now_playing_movies():
-    url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={TMDB_API_KEY}&language=ko-KR&region=KR&page=1"
+    url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={TMDB_API_KEY}&language=ko-KR&region=KR"
     response = requests.get(url)
     data = response.json()
     movies = data.get('results', [])
@@ -19,11 +19,12 @@ def get_now_playing_movies():
 
 def get_today_release_movies():
     today = date.today().isoformat()
-    url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&primary_release_date.gte={today}&primary_release_date.lte={today}&region=KR"
+    url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&primary_release_date.gte={today}&primary_release_date.lte={today}&with_original_language=ko"
     response = requests.get(url)
     data = response.json()
     movies = data.get('results', [])
     return movies
+
 
 def send_movies_info(chat_id, movies):
     for movie in movies:
@@ -64,10 +65,16 @@ def handle(msg):
 
     if text == '상영 영화 정보':
         movies = get_now_playing_movies()
-        send_movies_info(chat_id, movies)
+        if not movies:
+            bot.sendMessage(chat_id, '현재 한국에서 상영중인 영화가 없습니다:)')
+        else:
+            send_movies_info(chat_id, movies)
     elif text == '오늘 개봉 영화':
         movies = get_today_release_movies()
-        send_movies_info(chat_id, movies)
+        if not movies:
+            bot.sendMessage(chat_id, '오늘 한국에서 개봉한 영화가 없습니다:)')
+        else:
+            send_movies_info(chat_id, movies)
     elif text.startswith('국내 박스오피스 순위'):
         target_date = text.replace('국내 박스오피스 순위', '').strip()
         if target_date >= date.today().strftime("%Y%m%d"):
