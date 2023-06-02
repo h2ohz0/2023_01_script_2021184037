@@ -1,56 +1,57 @@
-
-import sys
 import time
-import sqlite3
 import telepot
 import requests
-import traceback
 from datetime import date
 
 TOKEN = '6162134309:AAErOQOG9MK7Bpu3YHjlcMI89qcW6O7L_dE'
-TMDB_KEY = '191bceef021f24c785530fc8364dcc11'
-BASE_URL = f'https://api.themoviedb.org/3/movie/now_playing?api_key={TMDB_KEY}&language=ko-KR&page=1&region=KR'
+TMDB_API_KEY = '191bceef021f24c785530fc8364dcc11'
 bot = telepot.Bot(TOKEN)
 
+def get_now_playing_movies():
+    url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={TMDB_API_KEY}&language=ko-KR&region=KR&page=1"
+    response = requests.get(url)
+    data = response.json()
+    movies = data.get('results', [])
+    return movies
 
-def getMovieData():
-    res = requests.get(BASE_URL)
-    if res.status_code == 200:
-        return res.json()['results']
-    else:
-        return []
+def get_today_release_movies():
+    today = date.today().isoformat()
+    url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&primary_release_date.gte={today}&primary_release_date.lte={today}&region=KR"
+    response = requests.get(url)
+    data = response.json()
+    movies = data.get('results', [])
+    return movies
 
-
-def sendMessage(user, msg):
-    try:
-        bot.sendMessage(user, msg)
-    except:
-        traceback.print_exc(file=sys.stdout)
-
+def send_movies_info(chat_id, movies):
+    for movie in movies:
+        title = movie.get('title')
+        release_date = movie.get('release_date')
+        overview = movie.get('overview')
+        movie_id = movie.get('id')
+        tmdb_url = f"https://www.themoviedb.org/movie/{movie_id}"
+        message = f"Title: {title}\nRelease Date: {release_date}\nOverview: {overview}\nLink: {tmdb_url}"
+        bot.sendMessage(chat_id, message)
 
 def handle(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
     if content_type != 'text':
-        sendMessage(chat_id, '난 텍스트 이외의 메시지는 처리하지 못해요.')
+        bot.sendMessage(chat_id, '난 텍스트 이외의 메시지는 처리하지 못해요.')
         return
 
     text = msg['text']
 
-    if text.startswith('영화'):
-        movie_data = getMovieData()
-        if movie_data:
-            for movie in movie_data:
-                sendMessage(chat_id,
-                            f"제목: {movie['title']}\n개봉일: {movie['release_date']}\n평점: {movie['vote_average']}\n설명: {movie['overview']}")
-        else:
-            sendMessage(chat_id, '개봉 예정인 영화가 없습니다.')
+    if text == '상영 영화 정보':
+        movies = get_now_playing_movies()
+        send_movies_info(chat_id, movies)
+    elif text == '오늘 개봉 영화':
+        movies = get_today_release_movies()
+        send_movies_info(chat_id, movies)
     else:
-        sendMessage(chat_id, "모르는 명령어입니다.\n영화 명령어를 입력하세요.")
-
-
-print('Listening...')
+        bot.sendMessage(chat_id, "모르는 명령어입니다. '상영 영화 정보' 또는 '오늘 개봉 영화' 중 하나의 명령을 입력하세요.")
 
 bot.message_loop(handle)
 
+print('Listening...')
+
 while 1:
-    time.sleep(10)
+  time.sleep(10)
