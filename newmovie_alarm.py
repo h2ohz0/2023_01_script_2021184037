@@ -19,7 +19,7 @@ def get_now_playing_movies():
 
 def get_today_release_movies():
     today = date.today().isoformat()
-    url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&primary_release_date.gte={today}&primary_release_date.lte={today}&with_original_language=ko"
+    url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&primary_release_date.gte={today}&primary_release_date.lte={today}&with_original_language=ko&language=ko-KR&region=KR"
     response = requests.get(url)
     data = response.json()
     movies = data.get('results', [])
