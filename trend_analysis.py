@@ -187,43 +187,50 @@ def create_gui():
 
     root = tk.Tk()
     root.title("Korean Movies - Yearly & Monthly Release Count")
+    root.configure(background = '#c5d6eb')
 
-    label_start_year = tk.Label(root, text="Start Year")
+    label_start_year = tk.Label(root, text="Start Year", background='#c5d6eb',font=('한컴 말랑말랑 Regular', 12))
     label_start_year.grid(row=0, column=0)
     entry_start_year = tk.Entry(root)
     entry_start_year.grid(row=0, column=1)
 
-    label_start_month = tk.Label(root, text="Start Month")
+    label_start_month = tk.Label(root, text="Start Month", background='#c5d6eb', font=('한컴 말랑말랑 Regular', 12))
     label_start_month.grid(row=1, column=0)
     entry_start_month = tk.Entry(root)
     entry_start_month.grid(row=1, column=1)
 
-    label_end_year = tk.Label(root, text="End Year")
+    label_end_year = tk.Label(root, text="End Year", background='#c5d6eb', font=('한컴 말랑말랑 Regular', 12))
     label_end_year.grid(row=2, column=0)
     entry_end_year = tk.Entry(root)
     entry_end_year.grid(row=2, column=1)
 
-    label_end_month = tk.Label(root, text="End Month")
+    label_end_month = tk.Label(root, text="End Month", background='#c5d6eb', font=('한컴 말랑말랑 Regular', 12))
     label_end_month.grid(row=3, column=0)
     entry_end_month = tk.Entry(root)
     entry_end_month.grid(row=3, column=1)
 
-    button_get_data = tk.Button(root, text="Get Data", command=on_button_click)
-    button_get_data.grid(row=4, column=0)
+    button_get_data = tk.Button(root, text="Get Data", command=on_button_click, font=('한컴 말랑말랑 Regular', 12))
+    button_get_data.grid(row= 2, column=2)
 
     var_plot_type = tk.StringVar(root)
     var_plot_type.set("Heatmap")  # default value
     plot_types = ["Heatmap", "Line"]
     dropdown = tk.OptionMenu(root, var_plot_type, *plot_types)
-    dropdown.grid(row=4, column=1)
+    dropdown.grid(row=4, column=0)
 
-    button_save_plot = tk.Button(root, text="Save Plot", command=save_button_click_plot)
-    button_save_plot.grid(row=4, column=2)
+    # Dropdown 버튼의 폰트 변경
+    dropdown.config(font=('한컴 말랑말랑 Regular', 13))
 
-    button_save_data = tk.Button(root, text="Save Data", command=save_button_click_data)
-    button_save_data.grid(row=4, column=3)
+    # Dropdown 메뉴의 폰트 변경
+    dropdown["menu"].config(font=('한컴 말랑말랑 Regular', 13))
+
+    button_save_plot = tk.Button(root, text="Save Plot",  command=save_button_click_plot ,font=('한컴 말랑말랑 Regular', 13))
+    button_save_plot.grid(row=4, column=1)
+
+    button_save_data = tk.Button(root, text="Save Data",  command=save_button_click_data,  font=('한컴 말랑말랑 Regular', 13))
+    button_save_data.grid(row=4, column=2)
 
     root.mainloop()
 
 
-create_gui()
+#create_gui()

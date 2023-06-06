@@ -174,28 +174,25 @@ def get_monthly_movie_list(year, month):
     return all_movies
 
 
-def create_gui():
+def create_gui(root):
     def on_button_click():
         try:
             year = int(entry_year.get())
             month = int(entry_month.get())
             if 1 <= month <= 12:
                 movie_list = get_monthly_movie_list(year, month)
-                create_scrollable_list(movie_list, year, month)  # remove kofic_api_key
+                create_scrollable_list(movie_list, year, month)
             else:
                 messagebox.showerror("Error", "Month must be between 1 and 12.")
         except ValueError:
             messagebox.showerror("Error", "Please enter valid year and month.")
 
-    root = Tk()
-    root.title("Movie List")
-
-    label_year = Label(root, text="Year", font = ("한컴 말랑말랑 Bold", 10))
+    label_year = Label(root, text="Year",background = '#c5d6eb', font = ("한컴 말랑말랑 Bold", 10))
     label_year.grid(row=0, column=0)
     entry_year = Entry(root)
     entry_year.grid(row=0, column=1)
 
-    label_month = Label(root, text="Month", font = ("한컴 말랑말랑 Bold", 10))
+    label_month = Label(root, text="Month", background = '#c5d6eb', font = ("한컴 말랑말랑 Bold", 10))
     label_month.grid(row=1, column=0)
     entry_month = Entry(root)
     entry_month.grid(row=1, column=1)
@@ -203,6 +200,9 @@ def create_gui():
     button_get_data = Button(root, text="Get Movie List", font = ("한컴 말랑말랑 Bold", 10), command=on_button_click)
     button_get_data.grid(row=2, column=0, columnspan=2)
 
+if __name__ == "__main__":
+    root = Tk()
+    root.title("Movie List")
+    root.configure(background='#c5d6eb')
+    create_gui(root)
     root.mainloop()
-
-create_gui()
