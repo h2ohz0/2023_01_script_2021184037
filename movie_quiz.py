@@ -45,7 +45,7 @@ class MovieQuizApplication:
         movie = random.choice(movies)
         movie_details = self.get_movie_details(movie['id'])
 
-        question = f"이 영화의 감독은 {movie_details['overview']}입니다. 최초 개봉일은 {movie_details['release_date']}입니다. 이 영화의 이름은 무엇인가요?"
+        question = f"이 영화의 감독은 {movie_details['director']}입니다. 내용은 {movie_details['overview']}입니다. 최초 개봉일은 {movie_details['release_date']}입니다. 이 영화의 이름은 무엇인가요?"
         answer = movie_details['title']
 
         return question, answer
