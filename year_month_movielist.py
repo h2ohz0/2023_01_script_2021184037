@@ -203,6 +203,7 @@ def create_gui(root):
 if __name__ == "__main__":
     root = Tk()
     root.title("Movie List")
+    root.resizable(False, False)
     root.configure(background='#c5d6eb')
     create_gui(root)
     root.mainloop()

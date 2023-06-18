@@ -230,7 +230,9 @@ def create_gui():
     button_save_data = tk.Button(root, text="Save Data",  command=save_button_click_data,  font=('한컴 말랑말랑 Regular', 13))
     button_save_data.grid(row=4, column=2)
 
+    root.resizable(False, False)
     root.mainloop()
+
 
 
 #create_gui()
