@@ -1,38 +1,31 @@
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk
 import trend_analysis
 import year_month_movielist
+import subprocess
+import webbrowser
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        self.resizable(False, False)
+
         self.title('영화 탐색 및 퀴즈')
 
         # 창 크기 및 위치 설정
-        window_width = 800
-        window_height = 500
+        window_width = 570
+        window_height = 200
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = int((screen_width - window_width) // 2)
         y = int((screen_height - window_height) // 2)
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-        # PIL 라이브러리를 이용해 이미지 파일 열기
-        image = Image.open('background.png')
-
-        # 이미지 크기 조정
-        new_size = (window_width, window_height)
-        image = image.resize(new_size)
-
-        self.bg_image = ImageTk.PhotoImage(image)
-
         # 배경 이미지를 포함한 Canvas 생성
-        self.canvas = tk.Canvas(self, width=window_width, height=window_height)
+        self.canvas = tk.Canvas(self, width=window_width, height=window_height, bg='#D6CADD')
         self.canvas.pack(fill="both", expand=True)
-        self.canvas.create_image(0, 0, image=self.bg_image, anchor="nw")
 
         # 프레임 생성 (canvas 위에)
         self.frame_title = tk.Frame(self.canvas)
@@ -66,8 +59,8 @@ class App(tk.Tk):
             self.buttons.append(button)
 
         # 출력 칸
-        self.content = tk.Text(self.frame_content)
-        self.content.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        #self.content = tk.Text(self.frame_content)
+        #self.content.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
         # 프레임 배치
         self.frame_title.pack(side="top", fill="x")
@@ -89,17 +82,18 @@ class App(tk.Tk):
 
         print(f'{option} 버튼이 클릭되었습니다.')
 
+        # Clear sub menu frame whenever an option button is clicked
+        for widget in self.frame_sub_menu.winfo_children():
+            widget.destroy()
+
         if option == '영화 히스토리 퀴즈':
             self.show_quiz()
         elif option == '영화 탐색':
-            # Remove the following line to prevent the sub menu from appearing
             self.create_sub_menu()
-            self.content.delete('1.0', tk.END)  # Clean the previous content
         elif option == '텔레그램 봇':
             self.show_bot()
-            self.content.delete('1.0', tk.END)  # Clean the previous content
         else:
-            self.content.delete('1.0', tk.END)
+            self.init_content()
             self.content.insert(tk.END, '올바르지 않은 옵션입니다.')
 
     def create_sub_menu(self):
@@ -125,23 +119,34 @@ class App(tk.Tk):
             self.show_movielist()
 
     def show_quiz(self):
-        self.content.delete('1.0', tk.END)  # Clean the previous content
-
+        if hasattr(self, 'content'):
+            self.content.delete('1.0', tk.END)
+        subprocess.call(["python", "movie_history_quiz.py"])
     def show_movielist(self):
-        self.content.delete('1.0', tk.END)  # Clean the previous content
-
+        if hasattr(self, 'content'):
+            self.content.delete('1.0', tk.END)
         toplevel = tk.Toplevel()
         toplevel.configure(bg='#c5d6eb')  # Set the background color here
 
         year_month_movielist.create_gui(toplevel)
-        self.content.insert(tk.END, '개봉 연월별 영화 목록입니다.\n')
+        #self.content.insert(tk.END, '개봉 연월별 영화 목록입니다.\n')
 
     def show_trend(self):
-        self.content.delete('1.0', tk.END)  # Clean the previous content
+        if hasattr(self, 'content'):
+            self.content.delete('1.0', tk.END)
         trend_analysis.create_gui()
 
     def show_bot(self):
-        self.content.delete('1.0', tk.END)  # Clean the previous content
+        if hasattr(self, 'content'):
+            self.content.delete('1.0', tk.END)
+        webbrowser.open('https://t.me/movie_alarm_jiyoung_bot')
+
+    def init_content(self):
+        if hasattr(self, 'content'):
+            self.content.pack_forget()
+            self.content.destroy()
+        self.content = tk.Text(self.frame_content)
+        self.content.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
 
 if __name__ == "__main__":
